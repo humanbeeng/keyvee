@@ -45,7 +45,6 @@ func (c *Cache) Set(key []byte, value []byte, ttl time.Duration) error {
 		delete(c.data, string(key))
 	}()
 	c.data[string(key)] = string(value)
-	fmt.Printf("Setting val %s %s", key, value)
 	return nil
 }
 

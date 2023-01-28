@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/humanbeeng/distributed-cache/cache"
@@ -20,14 +21,16 @@ type ServerOpts struct {
 
 type Server struct {
 	ServerOpts
-	followers map[*client.Client]struct{}
-	cache     cache.Cacher
+	follwersMu sync.RWMutex
+	followers  map[*client.Client]struct{}
+	cache      cache.Cacher
 }
 
 func NewServer(opts ServerOpts) *Server {
 	return &Server{
 		ServerOpts: opts,
 		cache:      cache.New(),
+		follwersMu: sync.RWMutex{},
 		followers:  make(map[*client.Client]struct{}),
 	}
 }
@@ -38,7 +41,7 @@ func (s *Server) Start() error {
 	if err != nil {
 		return fmt.Errorf("listen error: %s", err)
 	}
-	log.Printf("Server starting on port [%s]", s.ListenAddr)
+	log.Printf("Server starting on port %v", ln.Addr().String())
 
 	for {
 		conn, err := ln.Accept()
@@ -85,7 +88,10 @@ func (s *Server) handleCommand(conn net.Conn, cmd proto.Command) {
 		}
 	case proto.CmdJoin:
 		{
+			fmt.Println("Join request came in")
+			s.follwersMu.Lock()
 			s.followers[&client.Client{Conn: conn}] = struct{}{}
+			s.follwersMu.Unlock()
 		}
 	}
 
@@ -94,12 +100,12 @@ func (s *Server) handleCommand(conn net.Conn, cmd proto.Command) {
 func (s *Server) handleSetCommand(conn net.Conn, cmdSet proto.CommandSet) {
 	resp := proto.ResponseSet{}
 
-	go func(cmdSet proto.CommandSet) {
+	go func() {
 		for follower := range s.followers {
 			fmt.Printf("Sending SET %s : %s", cmdSet.Key, cmdSet.Value)
 			follower.Set(string(cmdSet.Key), string(cmdSet.Value), cmdSet.TTL)
 		}
-	}(cmdSet)
+	}()
 
 	err := s.cache.Set(cmdSet.Key, cmdSet.Value, time.Second*time.Duration(cmdSet.TTL))
 	if err != nil {

@@ -3,7 +3,6 @@ package proto
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"io"
 )
 
@@ -91,7 +90,6 @@ func ParseCommand(r io.Reader) (Command, error) {
 	var cmd Command
 
 	binary.Read(r, binary.LittleEndian, &cmd)
-	fmt.Println("command from r: ", cmd)
 	return cmd, nil
 }
 

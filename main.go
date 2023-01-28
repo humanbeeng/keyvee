@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
-	"time"
+	"net"
 
-	"github.com/humanbeeng/distributed-cache/client"
+	"github.com/humanbeeng/distributed-cache/proto"
 )
 
 func main() {
@@ -17,31 +19,11 @@ func main() {
 
 	flag.Parse()
 
-	go func() {
-		time.Sleep(time.Second * 1)
-		SendCommand()
-	}()
-
 	if *leader {
 		startLeader()
 	} else {
 		startFollower("localhost:3000")
 	}
-
-}
-
-func SendCommand() {
-
-	client, err := client.New("localhost:3000")
-	if err != nil {
-		log.Fatal("Unable to establish connection")
-		return
-	}
-
-	client.Set("heyy", "there", 1)
-
-	val, _ := client.Get("heyy")
-	fmt.Println(val)
 
 }
 
@@ -65,6 +47,16 @@ func startFollower(leaderAddr string) {
 		IsLeader:   false,
 	}
 	fmt.Println("Follower UP")
+
+	conn, err := net.Dial("tcp", leaderAddr)
+	if err != nil {
+		log.Fatalf("Unable to connect to leader: %s", leaderAddr)
+	}
+
+	cmdJoin := proto.CmdJoin
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, cmdJoin)
+	conn.Write(buf.Bytes())
 
 	server := NewServer(serverOpts)
 	server.Start()
