@@ -40,6 +40,7 @@ func (c *Client) Get(key string) (string, error) {
 func (c *Client) Set(key string, value string, ttl int32) error {
 	cmdset := &proto.CommandSet{Key: []byte(key), Value: []byte(value), TTL: ttl}
 	_, err := c.Conn.Write(cmdset.Bytes())
+	fmt.Printf("SET %v %v\n", key, value)
 
 	if err != nil {
 		return err
@@ -49,6 +50,21 @@ func (c *Client) Set(key string, value string, ttl int32) error {
 
 	if resp.Status == proto.Error {
 		return fmt.Errorf("unable to set %s", key)
+	}
+	return nil
+}
+
+func (c *Client) Del(key string) error {
+	cmdDel := &proto.CommandDel{Key: []byte(key)}
+	_, err := c.Conn.Write(cmdDel.Bytes())
+	if err != nil {
+		return err
+	}
+
+	resp := proto.ParseDelResponse(c.Conn)
+
+	if resp.Status == proto.Error {
+		return fmt.Errorf("unable to del %s", key)
 	}
 	return nil
 }

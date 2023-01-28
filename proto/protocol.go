@@ -33,6 +33,14 @@ type CommandGet struct {
 
 type CommandJoin struct{}
 
+type CommandDel struct {
+	Key []byte
+}
+
+type ResponseDel struct {
+	Status Status
+}
+
 type ResponseGet struct {
 	Status Status
 	Value  []byte
@@ -70,6 +78,14 @@ func (c *CommandGet) Bytes() []byte {
 	return buf.Bytes()
 }
 
+func (c *CommandDel) Bytes() []byte {
+	buf := new(bytes.Buffer)
+	keyLen := int32(len(c.Key))
+	binary.Write(buf, binary.LittleEndian, keyLen)
+	binary.Write(buf, binary.LittleEndian, c.Key)
+	return buf.Bytes()
+}
+
 func (r *ResponseGet) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, r.Status)
@@ -81,6 +97,12 @@ func (r *ResponseGet) Bytes() []byte {
 }
 
 func (r *ResponseSet) Bytes() []byte {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, r.Status)
+	return buf.Bytes()
+}
+
+func (r *ResponseDel) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, r.Status)
 	return buf.Bytes()
@@ -123,8 +145,23 @@ func ParseGetCommand(r io.Reader) *CommandGet {
 	return cmd
 }
 
+func ParseDelCommand(r io.Reader) *CommandDel {
+	cmd := &CommandDel{}
+	var keyLen int32
+	binary.Read(r, binary.LittleEndian, &keyLen)
+	cmd.Key = make([]byte, keyLen)
+	binary.Read(r, binary.LittleEndian, &cmd.Key)
+	return cmd
+}
+
 func ParseSetResponse(r io.Reader) *ResponseSet {
 	resp := &ResponseSet{}
+	binary.Read(r, binary.LittleEndian, &resp.Status)
+	return resp
+}
+
+func ParseDelResponse(r io.Reader) *ResponseDel {
+	resp := &ResponseDel{}
 	binary.Read(r, binary.LittleEndian, &resp.Status)
 	return resp
 }
