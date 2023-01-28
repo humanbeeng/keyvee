@@ -81,6 +81,7 @@ func (c *CommandGet) Bytes() []byte {
 func (c *CommandDel) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	keyLen := int32(len(c.Key))
+	binary.Write(buf, binary.LittleEndian, CmdDel)
 	binary.Write(buf, binary.LittleEndian, keyLen)
 	binary.Write(buf, binary.LittleEndian, c.Key)
 	return buf.Bytes()
