@@ -93,6 +93,11 @@ func (s *Server) handleCommand(conn net.Conn, cmd proto.Command) {
 			s.followers[&client.Client{Conn: conn}] = struct{}{}
 			s.follwersMu.Unlock()
 		}
+	case proto.CmdDel:
+		{
+			cmdDel := proto.ParseDelCommand(conn)
+			s.handleDelCommand(conn, *cmdDel)
+		}
 	}
 
 }
@@ -102,7 +107,7 @@ func (s *Server) handleSetCommand(conn net.Conn, cmdSet proto.CommandSet) {
 
 	go func() {
 		for follower := range s.followers {
-			fmt.Printf("Sending SET %s : %s", cmdSet.Key, cmdSet.Value)
+			fmt.Printf("Sending SET %s : %s\n", cmdSet.Key, cmdSet.Value)
 			follower.Set(string(cmdSet.Key), string(cmdSet.Value), cmdSet.TTL)
 		}
 	}()
@@ -111,6 +116,7 @@ func (s *Server) handleSetCommand(conn net.Conn, cmdSet proto.CommandSet) {
 	if err != nil {
 		resp.Status = proto.Error
 		conn.Write(resp.Bytes())
+		return
 	}
 
 	resp.Status = proto.Ok
@@ -128,6 +134,27 @@ func (s *Server) handleGetCommand(conn net.Conn, cmdGet proto.CommandGet) {
 	}
 
 	resp.Value = val
+	resp.Status = proto.Ok
+	conn.Write(resp.Bytes())
+}
+
+func (s *Server) handleDelCommand(conn net.Conn, cmdDel proto.CommandDel) {
+	resp := proto.ResponseDel{}
+
+	go func() {
+		for follower := range s.followers {
+			fmt.Printf("Sending DEL %s\n", cmdDel.Key)
+			follower.Del(string(cmdDel.Key))
+		}
+	}()
+
+	err := s.cache.Delete(cmdDel.Key)
+	if err != nil {
+		resp.Status = proto.Error
+		conn.Write(resp.Bytes())
+		return
+	}
+
 	resp.Status = proto.Ok
 	conn.Write(resp.Bytes())
 }
