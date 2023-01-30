@@ -17,6 +17,11 @@ A simple KV-Store which runs as a Leader Follower cluster.
 - When a SET, DEL command is given, leader ensures that all the followers are in sync with the given command.
 - SET command can be paired up with a TTL(in seconds), after which entry will be removed from the store
 
+## Prerequisites
+
+- Working installation of Go (pref above 1.15)
+- [CLI](https://github.com/humanbeeng/kv-cli) 
+
 ```sh
 $ make leader
 $ make follower
