@@ -88,7 +88,7 @@ func (s *Server) handleCommand(conn net.Conn, cmd proto.Command) {
 		}
 	case proto.CmdJoin:
 		{
-			fmt.Println("Join request came in")
+			fmt.Println("Follower join request came in", conn.RemoteAddr())
 			s.follwersMu.Lock()
 			s.followers[&client.Client{Conn: conn}] = struct{}{}
 			s.follwersMu.Unlock()
