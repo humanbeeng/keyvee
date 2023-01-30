@@ -40,7 +40,6 @@ func (c *Client) Get(key string) (string, error) {
 func (c *Client) Set(key string, value string, ttl int32) error {
 	cmdset := &proto.CommandSet{Key: []byte(key), Value: []byte(value), TTL: ttl}
 	_, err := c.Conn.Write(cmdset.Bytes())
-	fmt.Printf("SET %v %v\n", key, value)
 
 	if err != nil {
 		return err
