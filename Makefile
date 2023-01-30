@@ -1,7 +1,7 @@
 build:
 	go build -o bin/distributed-cache
 
-run: build
+leader: build
 	./bin/distributed-cache -leader true
 
 follower:build
