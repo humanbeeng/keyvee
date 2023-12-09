@@ -1,4 +1,4 @@
-# Distributed Cache
+# Keyvee
 
 A simple KV-Store which runs as a Leader Follower cluster. 
 
